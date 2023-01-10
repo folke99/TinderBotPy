@@ -1,0 +1,3 @@
+[submodule "TinderApi"]
+	path = TinderApi
+	url = git@github.com:folke99/TinderApi.git
