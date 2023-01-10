@@ -1,16 +1,28 @@
-# This is a sample Python script.
+import json
+import random
+from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv()
 
-# Press ⌃R to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
+import tinder_api
+import chatgpt_api
+import models
+import utils
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press ⌘F8 to toggle the breakpoint.
+def main():
+    # Create instances of the APIs
+    tinder = tinder_api.TinderAPI()
+    chatgpt = chatgpt_api.ChatGptAPI()
 
+    #tinder.swipe_right()
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+    # @param: True gives matches with messages False gives without
+    r = tinder.get_matches(True)
+    print(r)
+    return
+    # Get the list of matches
+    # matches = tinder.get_matches()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+if __name__ == "__main__":
+    main()
