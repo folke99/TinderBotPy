@@ -7,7 +7,8 @@ import config
 
 class ChatGptAPI:
     def __init__(self):
-        self.base_url = "https://api.openai.com/v1/engines/davinci-codex/completions"
+        engine = "davinci"
+        self.base_url = f"https://api.openai.com/v1/engines/{engine}/completions"
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {config.CHATGPT_TOKEN}"
@@ -23,9 +24,15 @@ class ChatGptAPI:
             "prompt": prompt,
             "options": self.options
         }
-        response = requests.post(self.base_url, headers=self.headers, json=data)
-
-        if response.status_code != 200:
-            raise ValueError(f"Failed to generate response. {response.text}")
+        try:
+            response = requests.post(self.base_url, headers=self.headers, json=data)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as err:
+            if response.status_code == 401:
+                raise ValueError("Failed to generate response. Invalid or expired token.")
+            else:
+                raise ValueError(f"Failed to generate response. {err}")
+        except requests.exceptions.RequestException as err:
+            raise ValueError(f"Failed to generate response. {err}")
 
         return json.loads(response.text)

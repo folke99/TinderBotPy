@@ -12,15 +12,17 @@ import utils
 
 def main():
     # Create instances of the APIs
-    tinder = tinder_api.TinderAPI()
+    #tinder = tinder_api.TinderAPI()
     chatgpt = chatgpt_api.ChatGptAPI()
+
+    chatgpt.generate_response("Are you there?")
 
     #tinder.swipe_right()
 
     # @param: True gives matches with messages False gives without
-    r = tinder.get_matches(True)
-    print(r)
-    return
+    #r = tinder.get_matches(True)
+    #print(r)
+
     # Get the list of matches
     # matches = tinder.get_matches()
 
