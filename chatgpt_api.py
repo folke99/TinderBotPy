@@ -7,10 +7,11 @@ import config
 class ChatGptAPI:
     def __init__(self):
         self.model = "text-davinci-003"
+        #self.model = "text-curie-001"
         self.token = config.CHATGPT_TOKEN
         self.options = {
-            "max_tokens": 50,
-            "temperature": 0.5
+            "max_tokens": 100,
+            "temperature": 0.3
         }
         openai.api_key = self.token
 
@@ -24,5 +25,7 @@ class ChatGptAPI:
             )
         except Exception as e:
             raise ValueError(f"Failed to generate response. {e}")
-        print(response)
+        #print("prompt: ", prompt)
+        #print("response: ", response.choices[0].text)
+        conversation_state = response.get("conversation_state", None)
         return response.choices[0].text

@@ -1,31 +1,27 @@
-import json
-import random
-from datetime import datetime
 from dotenv import load_dotenv
 load_dotenv()
-
 import tinder_api
 import chatgpt_api
-import models
-import utils
+import threading
+from models import Match
 
 
-def main():
-    # Create instances of the APIs
-    # tinder = tinder_api.TinderAPI()
-    chatgpt = chatgpt_api.ChatGptAPI()
+# Create instances of the APIs
+tinder = tinder_api.TinderAPI()
+chatgpt = chatgpt_api.ChatGptAPI()
 
-    # Works
-    # r = chatgpt.generate_response("Are you there?")
-    # print(r)
-    # tinder.swipe_right()
+matches = []
+# Create Match objects for each match
+for match in tinder.get_matches_api(True):
+    matches.append(Match(match_id=match["match_id"], name=match["name"], last_activity_date=match["last_active"], tinder=tinder, chatgpt=chatgpt))
 
-    # @param: True gives matches with messages False gives without
-    # r = tinder.get_matches(True)
-    # print(r)
+# Use a thread for each match to check for new messages concurrently
+threads = []
+for match in matches:
+    t = threading.Thread(target=match.wait_for_message)
+    t.start()
+    threads.append(t)
 
-    # Get the list of matches
-    # matches = tinder.get_matches()
-
-if __name__ == "__main__":
-    main()
+# Wait for all threads to finish
+for t in threads:
+    t.join()
