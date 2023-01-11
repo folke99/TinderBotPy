@@ -23,3 +23,8 @@ class TinderAPI:
     def send_message_api(self, match_id, message):
         tinder.Matches.send_message(self.tinderIns, match_id, message)
 
+    def get_messages_api(self, match_id):
+        return tinder.Matches.get_messages(self.tinderIns.matches, match_id)
+
+    def get_all_messages_api(self):
+        return tinder.Matches.get_all_messages(self.tinderIns.matches)

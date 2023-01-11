@@ -1,0 +1,2 @@
+def exceptions():
+    return None
