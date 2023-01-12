@@ -12,6 +12,7 @@ from models import Match
 # Create instances of the APIs
 tinder = tinder_api.TinderAPI()
 chatgpt = chatgpt_api.ChatGptAPI()
+threads = []
 
 
 def create_match_objects():
@@ -28,16 +29,20 @@ def create_match_objects():
 
 def start_match_threads(matches):
     # Use a thread for each match to check for new messages concurrently
-    threads = []
     for match in matches:
         t = threading.Thread(target=match.wait_for_message)
         t.start()
         threads.append(t)
-    return threads
+
+
+def add_match_to_threads(match, threads):
+    t = threading.Thread(target=match.wait_for_message)
+    t.start()
+    threads.append(t)
 
 
 # @param ratio: 0 - 100. 0 = 0% chance of swiping right. 100 = 100% chance of swiping right.
-def auto_swipe(matches, ratio=70):
+def auto_swipe(ratio=70):
     while True:
         rand = random.randint(0, 100)
         print("random: " + str(rand))
@@ -52,12 +57,13 @@ def auto_swipe(matches, ratio=70):
         if res:
             if res["match"]:
                 latest_match = tinder.get_matches_api(False)[0]
-                matches.append(Match(match_id=latest_match["match_id"],
+                match = Match(match_id=latest_match["match_id"],
                                      name=latest_match["name"],
                                      last_activity_date=latest_match["last_active"],
                                      tinder=tinder,
-                                     chatgpt=chatgpt))
-                matches[-1].message("Hej hej")
+                                     chatgpt=chatgpt)
+                match.message("Hej hej")
+                add_match_to_threads(match)
 
             if res["likes_left"] == 0:
                 print("no more likes left")
@@ -67,15 +73,15 @@ def auto_swipe(matches, ratio=70):
         time.sleep(rand)
 
 
-def start_autoswipe_thread(matches, ratio=70):
+def start_autoswipe_thread(ratio=70):
     print("Starting autoswipe thread")
-    t = threading.Thread(target=auto_swipe(matches, ratio))
+    t = threading.Thread(target=auto_swipe(ratio))
     t.start()
     print("Autoswipe thread started")
     return t
 
 
-def wait_for_threads_to_finish(threads):
+def wait_for_threads_to_finish():
     # Wait for all threads to finish
     for t in threads:
         t.join()
@@ -83,9 +89,9 @@ def wait_for_threads_to_finish(threads):
 
 def main():
     matches = create_match_objects()
-    threads = start_match_threads(matches)
-    threads.append(start_autoswipe_thread(matches))
-    wait_for_threads_to_finish(threads)
+    start_match_threads(matches)
+    threads.append(start_autoswipe_thread())
+    wait_for_threads_to_finish()
 
 
 if __name__ == "__main__":
