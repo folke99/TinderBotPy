@@ -1,5 +1,4 @@
 from TinderApi import tinder
-
 # Import configurations
 import config
 
@@ -14,7 +13,14 @@ class TinderAPI:
         for user in users_to_swipe:
             liked = self.tinderIns.swipe.like_user(user["user_id"])  # LIKE USER
             print(liked)  # -> {'status': 200, 'match': False, 'user_id': 'some_user_id', 'likes_left': 100}
-            return  # This is her as a block. Removing this will probobly get your account banned
+            return liked # This is her as a block. Removing this will probobly get your account banned
+
+    def swipe_left_api(self):
+        users_to_swipe = tinder.Swipe.get_users(self.tinderIns)
+        for user in users_to_swipe:
+            passed = self.tinderIns.swipe.pass_user(user["user_id"])  # LIKE USER
+            print(passed)  # -> {'status': 200, 'match': False, 'user_id': 'some_user_id', 'likes_left': 100}
+            return passed  # This is her as a block. Removing this will probobly get your account banned
 
     def get_matches_api(self, messages):
         return tinder.Matches.get_matches(self.tinderIns, with_messages=messages)
