@@ -1,5 +1,6 @@
 import random
 import time
+import config
 
 
 class Match:
@@ -10,53 +11,58 @@ class Match:
         self.match_id = match_id
         self.name = name
         self.last_activity_date = last_activity_date
-        self.cache = {}
-        #prompt = "Rolspela som om du chattade på Tinder, jag börjar skriva"
-        #response = self.chatgpt.generate_response(prompt)
-        #self.conversation_state.append({prompt: response})
-        #print(self.conversation_state)
+        self.cache = {"tinder_användare": [], "chatGPT": []}
+        self.on_init = True
 
     def message(self, message):
-        self.tinder.send_message_api(self.match_id, message)
+        message = message.strip()
+        # self.tinder.send_message_api(self.match_id, message)
+        self.cache["chatGPT"].append(message)
+        print(f"Sent message to {self.name}: {message}")
+        print(self.cache)
 
     def get_messages(self):
         return self.tinder.get_messages_api(self.match_id)
 
     def wait_for_message(self):
         while True:
-            messages = self.get_messages()
-            # check if there are any new messages
-            if len(messages) > len(self.conversation_state):
-                # extract new messages
-                new_messages = messages[len(self.conversation_state):]
-                for message in new_messages:
-                    print(f"New message from {self.name}: {message['message']}")
-                    # Do something with the new message, like responding
+            print("Checking for new messages...")
+            if self.on_init:
+                messages_init = self.get_messages()
+                for message in messages_init:
+                    if message["from"] == config.MY_TINDER_ID:
+                        self.cache["chatGPT"].append(message["message"])
+                    else:
+                        self.cache["tinder_användare"].append(message["message"])
 
-                    #prompt = f"Rolplay answering a Tinder chat for all upcomming messages. The incoming message is: {message['message']}. And the conversation so far is {self.cache}"
-                    prompt = f"Rollspela att du svarar på Tinder. Det inkommande medelandet är: {message['message']}. Och konversationen än så länge ser ut så här: {self.cache}"
+                if messages_init[0]["from"] == config.MY_TINDER_ID:
+                    print("Latest message was from me waiting for more messages...")
+                    pass
+                else:
+                    print("On initialization: Latest message was from them, sending message...")
+                    message = messages_init[0]["message"]
+                    prompt = f"Rollspela att du svarar på Tinder. Det inkommande medelandet är: {message}." \
+                             f" Och konversationen än så länge ser ut så här: {self.cache}, du är chatGPT"
                     response = self.chatgpt.generate_response(prompt)
-                    self.cache[message['message']] = response
-                    print(response)
-                    # Send the response
-                    #self.tinder.send_message_api(self.match_id, response)
-            time.sleep(random.randrange(8000, 50000))  # wait for 8000-50000 seconds before checking again
-
-    def wait_for_message2(self):
-        while True:
-            messages_raw = self.get_messages()
-            messages = []
-            for message in messages_raw:
-                messages.append(message["message"])
-            # check if there are any new messages
-            if len(messages) > (len(self.conversation_state)-1):
-                # extract new messages
-                new_messages = messages[(len(self.conversation_state)-1):]
-                for message in new_messages:
-                    print(f"New message from {self.name}: {message}")
-                    # Do something with the new message, like responding
-                    gpt_response = self.chatgpt.generate_response(message)
-                    print(gpt_response)    #self.message(gpt_response)
-                    # Send a message here
-                    self.conversation_state = messages
-            time.sleep(random.randrange(8000, 50000))  # wait for 8000-50000 seconds before checking again
+                    self.message(response)
+                self.on_init = False
+            else:
+                messages = []
+                for message in self.get_messages():
+                    if message["to"] == config.MY_TINDER_ID:
+                        messages.append(message["message"])
+                # check if there are any new messages
+                if len(messages) > len(self.cache["tinder_användare"]) and len(messages) != 1:
+                    # extract new messages
+                    new_messages = messages[len(self.cache["tinder_användare"]):]
+                    for message in new_messages:
+                        print(f"New message from {self.name}: {message}")
+                        # prompt = f"Roleplay answering a Tinder chat for all upcoming messages.
+                        # The incoming message is: {message['message']}. And the conversation so far is {self.cache}"
+                        prompt = f"Rollspela att du svarar på Tinder. Det inkommande medelandet är: {message}." \
+                                 f" Och konversationen än så länge ser ut så här: {self.cache}, du är chatGPT"
+                        response = self.chatgpt.generate_response(prompt)
+                        self.cache["tinder_användare"].append(message)
+                        # Send the response
+                        self.message(response)
+            time.sleep(random.randrange(7200, 14400))  # wait for 2-4 hours before checking again
