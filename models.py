@@ -16,19 +16,21 @@ class Match:
 
     def message(self, message):
         message = message.strip()
-        # self.tinder.send_message_api(self.match_id, message)
+        self.tinder.send_message_api(self.match_id, message)
         self.cache["chatGPT"].append(message)
         print(f"Sent message to {self.name}: {message}")
         print(self.cache)
+        return
 
     def get_messages(self):
         return self.tinder.get_messages_api(self.match_id)
 
     def wait_for_message(self):
         while True:
-            print("Checking for new messages...")
             if self.on_init:
+                print("Handling init conversation...")
                 messages_init = self.get_messages()
+                print("messages_init: ",messages_init)
                 for message in messages_init:
                     if message["from"] == config.MY_TINDER_ID:
                         self.cache["chatGPT"].append(message["message"])
@@ -40,29 +42,53 @@ class Match:
                     pass
                 else:
                     print("On initialization: Latest message was from them, sending message...")
-                    message = messages_init[0]["message"]
-                    prompt = f"Rollspela att du svarar på Tinder. Det inkommande medelandet är: {message}." \
-                             f" Och konversationen än så länge ser ut så här: {self.cache}, du är chatGPT"
+                    cache_string = ""
+                    for key, value in self.cache.items():
+                        if key == "tinder_användare":
+                            cache_string += f"{key}:\n"
+                            for message in value:
+                                cache_string += f"- {message}\n"
+                    #prompt = f"Rollspela att du svarar på Tinder medelanden. Det inkommande medelandet är: {messages_init[0]['message']}. If the messages from 'tinder_användare' are in english you should also answer in english!" \
+                    #        f" Och konversationen än så länge ser ut så här:\n{cache_string}"
+                    prompt = f"Roleplay answering a Tinder chat for all upcoming messages." \
+                             f"The incoming message is: {messages_init[0]['message']}. PLEASE ANSWER IN THE APPROPRIATE LANGUAGE!. you are 'chatGPT' and you are chatting with 'tinder_användare' And the conversation so far is {cache_string}."
+
+                    print("THIS IS THE PROMPT:     ", prompt)
                     response = self.chatgpt.generate_response(prompt)
+
                     self.message(response)
                 self.on_init = False
             else:
+                print("Checking for new messages...")
                 messages = []
                 for message in self.get_messages():
                     if message["to"] == config.MY_TINDER_ID:
                         messages.append(message["message"])
+                print("messages: ", messages)
+                print("cache: ", self.cache)
                 # check if there are any new messages
-                if len(messages) > len(self.cache["tinder_användare"]) and len(messages) != 1:
+                print("len(messages): " + str(len(messages)),
+                      "len(self.cache['tinder_användare']): " + str(len(self.cache["tinder_användare"])))
+                if len(messages) > len(self.cache["tinder_användare"]):
+                    print("New messages found!")
                     # extract new messages
                     new_messages = messages[len(self.cache["tinder_användare"]):]
-                    for message in new_messages:
+                    for message in reversed(new_messages):
                         print(f"New message from {self.name}: {message}")
-                        # prompt = f"Roleplay answering a Tinder chat for all upcoming messages.
-                        # The incoming message is: {message['message']}. And the conversation so far is {self.cache}"
-                        prompt = f"Rollspela att du svarar på Tinder. Det inkommande medelandet är: {message}." \
-                                 f" Och konversationen än så länge ser ut så här: {self.cache}, du är chatGPT"
+                        cache_string = ""
+                        for key, value in self.cache.items():
+                            cache_string += f"{key}:\n"
+                            for message_prompt in value:
+                                cache_string += f"- {message_prompt}\n"
+                        # prompt = f"Rollspela att du svarar på Tinder medelanden. Det inkommande medelandet är: {messages_init[0]['message']}. If the messages from 'tinder_användare' are in english you should also answer in english!" \
+                        #        f" Och konversationen än så länge ser ut så här:\n{cache_string}"
+                        prompt = f"Roleplay answering a Tinder chat for all upcoming messages." \
+                                 f"The incoming message is: {message}. And the conversation so far is {cache_string}"
                         response = self.chatgpt.generate_response(prompt)
                         self.cache["tinder_användare"].append(message)
                         # Send the response
                         self.message(response)
-            time.sleep(random.randrange(7200, 14400))  # wait for 2-4 hours before checking again
+
+            time_to_sleep = random.randint(60, 300)
+            print(f"Sleeping for {time_to_sleep} seconds...")
+            time.sleep(time_to_sleep)  # wait for 1-60 min before checking again

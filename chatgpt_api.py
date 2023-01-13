@@ -7,10 +7,11 @@ import config
 class ChatGptAPI:
     def __init__(self):
         self.model = "text-davinci-003"
+        #self.model = "text-curie-001"
         self.token = config.CHATGPT_TOKEN
         self.options = {
             "max_tokens": 100,
-            "temperature": 0.3
+            "temperature": 0.7
         }
         openai.api_key = self.token
 
